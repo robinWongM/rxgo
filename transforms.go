@@ -248,6 +248,60 @@ var filterOperater = transOperater{func(ctx context.Context, o *Observable, x re
 	return
 }}
 
+// DistinctUntilChanged suppresses consecutive duplicate items in the original Observable.
+func (parent *Observable) DistinctUntilChanged(f interface{}) (o *Observable) {
+	// check validation of f
+	fv := reflect.ValueOf(f)
+	inType := []reflect.Type{typeAny}
+	outType := []reflect.Type{typeAny}
+	b, ctx_sup := checkFuncUpcast(fv, inType, outType, true)
+	if !b {
+		panic(ErrFuncFlip)
+	}
+
+	o = parent.newTransformObservable("distinctUntilChanged")
+	o.flip_accept_error = checkFuncAcceptError(fv)
+
+	o.flip_sup_ctx = ctx_sup
+	o.flip = fv.Interface()
+	o.operator = makeDistinctUntilChangedOperater()
+	return o
+}
+
+func makeDistinctUntilChangedOperater() transOperater {
+	isEmittedEver := false
+	var lastEmittedValue interface{}
+
+	return transOperater{func(ctx context.Context, o *Observable, x reflect.Value, out chan interface{}) (end bool) {
+
+		fv := reflect.ValueOf(o.flip)
+		var params = []reflect.Value{x}
+		rs, skip, stop, e := userFuncCall(fv, params)
+
+		var item interface{} = rs[0].Interface()
+		if stop {
+			end = true
+			return
+		}
+		if skip {
+			return
+		}
+		if e != nil {
+			item = e
+		}
+		// send data
+		if !end {
+			if !isEmittedEver || item != lastEmittedValue {
+				isEmittedEver = true
+				lastEmittedValue = item
+				end = o.sendToFlow(ctx, item, out)
+			}
+		}
+
+		return
+	}}
+}
+
 func (parent *Observable) newTransformObservable(name string) (o *Observable) {
 	//new Observable
 	o = newObservable()

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/pmlpml/rxgo"
+	"github.com/robinwongm/rxgo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -96,4 +96,15 @@ func TestFilter(t *testing.T) {
 	})
 
 	assert.Equal(t, []int{0, 7, 2}, res, "Map Test Error!")
+}
+
+func TestDistinctUntilChanged(t *testing.T) {
+	res := []int{}
+	rxgo.Just(0, 0, 1, 1, 2, 2, 2, 3, 0, 4).DistinctUntilChanged(func(x int) int {
+		return x
+	}).Subscribe(func(x int) {
+		res = append(res, x)
+	})
+
+	assert.Equal(t, []int{0, 1, 2, 3, 0, 4}, res, "DistinctUntilChanged Test Error!")
 }

@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pmlpml/rxgo"
+	"github.com/robinwongm/rxgo"
 )
 
 type observer struct {
